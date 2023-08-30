@@ -25,7 +25,8 @@ from pdfminer.high_level import extract_pages
 # from pdfminer.layout import LTTextContainer
 # Create a file uploader
 
-st.set_page_config(page_title='Clinical Trial Docs')
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+st.set_page_config(page_title='LLM Summarization Docs')
 st.title('🦜🔗 LLM Summarization')
 
 if 'uploaded_file' not in st.session_state:
