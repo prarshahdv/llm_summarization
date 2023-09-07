@@ -13,4 +13,4 @@ RUN pip install -r requirements.txt
 ENV NAME=OPENAI_API_KEY
 
 # Define the command to run your Streamlit app
-CMD ["streamlit", "run", "../llm_summarization_app.py", "--server.port", "8561"]
+CMD ["streamlit", "run", "../im8_policy_app.py", "--server.port", "8561"]

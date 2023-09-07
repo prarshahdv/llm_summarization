@@ -1,3 +1,4 @@
+import sqlite3
 from io import StringIO
 
 from pdfminer.layout import LTTextContainer
@@ -6,11 +7,12 @@ __import__('pysqlite3')
 import sys
 
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+connection = sqlite3.connect('cache.db', timeout=100)
 
 import streamlit as st
 import os
 
-from langchain.llms import OpenAI
+
 from langchain.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain

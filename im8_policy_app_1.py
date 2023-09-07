@@ -2,7 +2,10 @@ import sys
 import sqlite3
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-connection = sqlite3.connect('cache.db', timeout=10)
+connection = sqlite3.connect('cache.db', timeout=1000)
+connection = sqlite3.connect('table', timeout=1000)
+connection = sqlite3.connect('main', timeout=1000)
+
 
 import logging
 import streamlit as st
@@ -15,13 +18,15 @@ from langchain.memory import ConversationBufferMemory
 from langchain.embeddings import OpenAIEmbeddings
 from langchain import PromptTemplate
 import asyncio
-from nemoguardrails import LLMRails, RailsConfig
 
 logging.basicConfig(level=logging.INFO)
 
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 st.set_page_config(page_title='LLM Summarization Docs')
 st.title('🦜🔗 LLM Summarization')
+
+# client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory="db/"))
+# collection = client.create_collection(name="policies")
 
 # initialize default variables
 st.session_state.QA = []
@@ -38,12 +43,20 @@ def read_pdf_to_string(dir_path):
         pdf_to_str.append(text)
     return pdf_to_str
 
+
+async def get_rails():
+    import nemoguardrails
+    config = nemoguardrails.RailsConfig.from_path("config/")
+    return nemoguardrails.LLMRails(config)
+
+
 def set_LLM_data():
             global LLM_DATA
 
             # guardrails
-            config = RailsConfig.from_path("config/")
-            rails = LLMRails(config)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            rails = loop.run_until_complete(get_rails())
 
             # read pdf
             pdf_dir_path = "resources/policies"
@@ -51,7 +64,8 @@ def set_LLM_data():
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000, length_function=len)
             embeddings = OpenAIEmbeddings()
             documents = text_splitter.create_documents(text_content)
-            db = Chroma.from_documents(documents, embeddings)
+            output_dir = "./db_metadata_v5"
+            db = Chroma.from_documents(documents, embeddings, persist_directory=output_dir)
 
             # prompt
             system_template = """
@@ -73,25 +87,23 @@ def set_LLM_data():
 def generate_response(query_text):
     global LLM_DATA
     rails = LLM_DATA["rails"]
-    loop = asyncio.new_event_loop()
+    loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
     result = loop.run_until_complete(rails.generate_async(
-        messages=[{"role": "user", "content": query_text}]))
-    dict = {"question": result["question"], "answer": result["answer"]}
+    messages=[{"role": "user", "content": query_text}]))
+    dict = {"question": query_text, "answer": result["content"]}
     st.session_state.QA.append(dict)
-
-
-def query_form():
-    with st.form('myform'):
-        query_text = st.text_input('Enter your question:', placeholder='Enter your question here')
-        submitted = st.form_submit_button('Submit', disabled=(query_text == ""))
-        if submitted:
-            with st.spinner('Generating...'):
-                generate_response(query_text)
-                for i in st.session_state.QA:
-                    st.write("Question : " + i["question"])
-                    st.write("Answer : " + i["answer"])
+    return
 
 
 set_LLM_data()
-query_form()
+with st.form('myform'):
+    query_text = st.text_input('Enter your question:', placeholder='Enter your question here')
+    submitted = st.form_submit_button('Submit', disabled=(query_text == ""))
+    if submitted:
+        with st.spinner('Generating...'):
+            generate_response(query_text)
+            for i in st.session_state.QA:
+                st.write("Question : " + i["question"])
+                st.write("Answer : " + i["answer"])
+                st.write("\n\n")
