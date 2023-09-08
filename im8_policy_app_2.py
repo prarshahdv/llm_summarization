@@ -1,8 +1,6 @@
 import sys
 import sqlite3
 
-from nemoguardrails.rails.llm.context_var_chain import ContextVarChain
-
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 connection = sqlite3.connect('cache.db', timeout=1000)
@@ -12,7 +10,6 @@ connection = sqlite3.connect('main', timeout=1000)
 import logging
 import streamlit as st
 import os
-import fitz  # PyMuPDF
 from langchain.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain
@@ -39,17 +36,13 @@ LLM_DATA = {}
 
 class PolicyQABot:
 
-    def __int__(self):
-        self.rails = None
+    def __int__(self, llm_rails):
+        # guardrails
+        self.rails = llm_rails
         self.pdf_dir_path = "resources/policies"
         st.session_state.QA = None
 
     def set_llm_data(self):
-        # guardrails
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        rails = loop.run_until_complete(get_rails())
-
         # read pdf
         text_content = read_pdf_to_string(self.pdf_dir_path)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000, length_function=len)
@@ -70,15 +63,14 @@ class PolicyQABot:
         memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
         principles = get_principles()
-        qa_chain = ConversationalRetrievalChain.from_llm(rails.llm, db.as_retriever(),
+        qa_chain = ConversationalRetrievalChain.from_llm(self.rails.llm, db.as_retriever(),
                                                          memory=memory, condense_question_prompt=qa_prompt)
         constitutional_chain = ConstitutionalChain.from_llm(
-            llm=rails.llm,
+            llm=self.rails.llm,
             chain=qa_chain,
             constitutional_principles=list(principles.values()),
         )
-        rails.register_action(constitutional_chain, name="qa_chain")
-        self.rails = rails
+        self.rails.register_action(constitutional_chain, name="qa_chain")
         return
 
     def generate_response(self, query_text):
@@ -105,4 +97,8 @@ class PolicyQABot:
 
 
 if __name__ == "__main__":
-    PolicyQABot().run()
+    # guardrails
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    llm_rails = loop.run_until_complete(get_rails())
+    PolicyQABot(llm_rails).run()
