@@ -1,8 +1,6 @@
 import sys
 import sqlite3
 
-from nemoguardrails.rails.llm.context_var_chain import ContextVarChain
-
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 connection = sqlite3.connect('cache.db', timeout=1000)
@@ -13,24 +11,18 @@ import logging
 import streamlit as st
 import os
 import fitz  # PyMuPDF
-from langchain.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-from langchain.embeddings import OpenAIEmbeddings
-from langchain import PromptTemplate
+from langchain import PromptTemplate, LLMChain
 import asyncio
+from langchain.chains import ConstitutionalChain
 from langchain.chains.constitutional_ai.models import ConstitutionalPrinciple
-from utils.constitutional_chain import ConstitutionalChain
 
 logging.basicConfig(level=logging.INFO)
 
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 st.set_page_config(page_title='Government Policy Docs')
 st.title('🦜🔗 Government Policy Bot')
-
-# client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory="db/"))
-# collection = client.create_collection(name="policies")
 
 # initialize default variables
 st.session_state.QA = []
@@ -63,6 +55,7 @@ def get_principles():
      'ethical_principle': ConstitutionalPrinciple(critique_request="The model should only talk about ethical and legal and fair things.", revision_request="Rewrite the model's output to be ethical, legal and fair and should not be harmfull to any living creature.", name="Ethical Principle")}
 
 
+
 def set_LLM_data():
     global LLM_DATA
 
@@ -71,33 +64,20 @@ def set_LLM_data():
     asyncio.set_event_loop(loop)
     rails = loop.run_until_complete(get_rails())
 
-    # read pdf
-    pdf_dir_path = "resources/policies"
-    text_content = read_pdf_to_string(pdf_dir_path)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000, length_function=len)
-    embeddings = OpenAIEmbeddings()
-    documents = text_splitter.create_documents(text_content)
-    output_dir = "./db_metadata_v5"
-    db = Chroma.from_documents(documents, embeddings, persist_directory=output_dir)
-
     # prompt
     system_template = """
             You are an intelligent and excellent at answering questions about government policies.
             I will ask questions from the documents and you'll help me try finding the answers from it.
-            Give the answer using best of your knowledge, say you dont know unable able to answer.
+            Give the answer using best of your knowledge, say you don't know if unable able to answer.
             ---------------
             {context}
             """
     qa_prompt = PromptTemplate.from_template(system_template)
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
     principles = get_principles()
-    qa_chain = ConversationalRetrievalChain.from_llm(rails.llm, db.as_retriever(),
-                                                     memory=memory, condense_question_prompt=qa_prompt)
     constitutional_chain = ConstitutionalChain.from_llm(
         llm=rails.llm,
-        chain=qa_chain,
         constitutional_principles=list(principles.values()),
+        chain=LLMChain(llm=rails.llm, prompt=qa_prompt),
     )
     rails.register_action(constitutional_chain, name="qa_chain")
     LLM_DATA = {"rails": rails}
