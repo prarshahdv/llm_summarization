@@ -1,4 +1,5 @@
 define flow check hallucination
+    priority 5
     bot ...
     $result = execute check_hallucination
     if $result

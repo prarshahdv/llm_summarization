@@ -1,16 +1,9 @@
-import logging
-import streamlit as st
 import os
+
+
 import fitz  # PyMuPDF
-from langchain.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-from langchain.embeddings import OpenAIEmbeddings
-from langchain import PromptTemplate
-import asyncio
 from langchain.chains.constitutional_ai.models import ConstitutionalPrinciple
-from utils.constitutional_chain import ConstitutionalChain
+
 
 def read_pdf_to_string(dir_path):
     pdf_to_str = []
@@ -25,7 +18,7 @@ def read_pdf_to_string(dir_path):
 
 async def get_rails():
     import nemoguardrails
-    config = nemoguardrails.RailsConfig.from_path("config/")
+    config = nemoguardrails.RailsConfig.from_content(yaml_content="config/")
     return nemoguardrails.LLMRails(config)
 
 def get_principles():

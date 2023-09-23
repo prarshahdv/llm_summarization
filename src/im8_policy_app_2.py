@@ -3,9 +3,9 @@ import sqlite3
 
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-connection = sqlite3.connect('cache.db', timeout=1000)
-connection = sqlite3.connect('table', timeout=1000)
-connection = sqlite3.connect('main', timeout=1000)
+connection = sqlite3.connect('../cache.db', timeout=1000)
+connection = sqlite3.connect('../table', timeout=1000)
+connection = sqlite3.connect('../main', timeout=1000)
 
 import logging
 import streamlit as st
@@ -36,11 +36,13 @@ LLM_DATA = {}
 
 class PolicyQABot:
 
-    def __int__(self, llm_rails):
+    def __int__(self):
         # guardrails
-        self.rails = llm_rails
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self.rails = loop.run_until_complete(get_rails())
         self.pdf_dir_path = "resources/policies"
-        st.session_state.QA = None
+        st.session_state.QA = []
 
     def set_llm_data(self):
         # read pdf
@@ -48,7 +50,7 @@ class PolicyQABot:
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000, length_function=len)
         embeddings = OpenAIEmbeddings()
         documents = text_splitter.create_documents(text_content)
-        output_dir = "./db_metadata_v5"
+        output_dir = "../db_metadata_v5"
         db = Chroma.from_documents(documents, embeddings, persist_directory=output_dir)
 
         # prompt
@@ -62,9 +64,11 @@ class PolicyQABot:
         qa_prompt = PromptTemplate.from_template(prompt_template)
         memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-        principles = get_principles()
         qa_chain = ConversationalRetrievalChain.from_llm(self.rails.llm, db.as_retriever(),
                                                          memory=memory, condense_question_prompt=qa_prompt)
+
+        # constitutional ai
+        principles = get_principles()
         constitutional_chain = ConstitutionalChain.from_llm(
             llm=self.rails.llm,
             chain=qa_chain,
@@ -98,7 +102,4 @@ class PolicyQABot:
 
 if __name__ == "__main__":
     # guardrails
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    llm_rails = loop.run_until_complete(get_rails())
-    PolicyQABot(llm_rails).run()
+    PolicyQABot().run()

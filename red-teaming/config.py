@@ -16,17 +16,12 @@
 import csv
 import json
 
-from langchain import PromptTemplate, LLMChain
-from langchain.chains import ConstitutionalChain
-from langchain.chains.constitutional_ai.models import ConstitutionalPrinciple
-from nemoguardrails import LLMRails
 from nemoguardrails.server.api import register_logger
-
-from im8_policy_app_2 import PolicyQABot
-from utils.functions import get_principles, get_rails
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 async def custom_logger(item):
-    print(item)
     """Custom logger that writes the ratings to a CSV file in the current directory."""
     data = json.loads(item["body"])
     config_id = data["config_id"]
@@ -62,9 +57,5 @@ async def custom_logger(item):
         writer = csv.writer(f)
         writer.writerow(row)
 
-
-def init(llm_rails: LLMRails):
-    # We register the additional prompt context for the current date.
-    PolicyQABot(llm_rails).set_llm_data()
 
 register_logger(custom_logger)

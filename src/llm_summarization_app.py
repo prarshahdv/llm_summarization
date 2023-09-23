@@ -7,7 +7,7 @@ __import__('pysqlite3')
 import sys
 
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-connection = sqlite3.connect('cache.db', timeout=100)
+connection = sqlite3.connect('../cache.db', timeout=100)
 
 import streamlit as st
 import os

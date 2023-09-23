@@ -5,9 +5,9 @@ from nemoguardrails.rails.llm.context_var_chain import ContextVarChain
 
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-connection = sqlite3.connect('cache.db', timeout=1000)
-connection = sqlite3.connect('table', timeout=1000)
-connection = sqlite3.connect('main', timeout=1000)
+connection = sqlite3.connect('../cache.db', timeout=1000)
+connection = sqlite3.connect('../table', timeout=1000)
+connection = sqlite3.connect('../main', timeout=1000)
 
 import logging
 import streamlit as st
@@ -51,7 +51,7 @@ def read_pdf_to_string(dir_path):
 
 async def get_rails():
     import nemoguardrails
-    config = nemoguardrails.RailsConfig.from_path("config/")
+    config = nemoguardrails.RailsConfig.from_path("../config/")
     return nemoguardrails.LLMRails(config)
 
 
@@ -77,7 +77,7 @@ def set_LLM_data():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000, length_function=len)
     embeddings = OpenAIEmbeddings()
     documents = text_splitter.create_documents(text_content)
-    output_dir = "./db_metadata_v5"
+    output_dir = "../db_metadata_v5"
     db = Chroma.from_documents(documents, embeddings, persist_directory=output_dir)
 
     # prompt
