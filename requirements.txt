@@ -12,5 +12,5 @@ python-dotenv==1.0.0
 streamlit==1.25.0
 streamlit-chat==0.1.1
 tiktoken==0.4.0
-trubrics==1.4.3
+trubrics==1.6.1
 watchdog==3.0.0
