@@ -1,3 +1,4 @@
+import sqlite3
 from io import StringIO
 
 from pdfminer.layout import LTTextContainer
@@ -6,13 +7,12 @@ __import__('pysqlite3')
 import sys
 
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+connection = sqlite3.connect('cache.db', timeout=100)
 
 import streamlit as st
 import os
 
-from langchain.llms import OpenAI
-from langchain.document_loaders.csv_loader import CSVLoader
-from langchain.document_loaders import TextLoader
+
 from langchain.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import ConversationalRetrievalChain
@@ -94,7 +94,7 @@ def generate_response(query_text, filename):
     if filename in LLMDATA:
         db = LLMDATA[filename]["db"]
         system_template = """
-        You are an intelligent clinical trail researcher and excellent at finding answers from the documents.
+        You are an intelligent bot, excellent at finding answers from the documents.
         I will ask questions from the documents and you'll help me try finding the answers from it.
         Give the answer using best of your knowledge, say you dont know if not able to answer.
         ---------------

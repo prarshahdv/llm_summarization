@@ -12,7 +12,7 @@ Before you can run the app, please ensure you have the following prerequisites i
 
 ## Getting Started
 
-Follow these steps to get the Clinical Trial App up and running:
+Follow these steps to get the app up and running:
 
 1. **Clone the Repository**:
 ```
@@ -39,4 +39,4 @@ docker run -p 8561:8561 --env-file .env your-image-name
 
 Check out the live demo of the App:
 
-[Demo Link](https://clinical-trials-jq4bjcqz4beoxu9lynij6g.streamlit.app/)
+[Demo Link](https://llm-summarization-bot.streamlit.app/)

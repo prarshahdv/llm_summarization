@@ -1,0 +1,29 @@
+define user ask capabilities
+  "What can you do?"
+  "What can you help me with?"
+  "tell me what you can do"
+  "tell me about you"
+  "How can I use your help?"
+
+define flow
+  user ask capabilities
+  bot inform capabilities
+
+define bot inform capabilities
+  "I am an AI assistant which helps answer questions based only on government policies which includes government data security policies, government personal data protection policies and third party framework policies."
+
+define user ask about policies
+  "What are third party government policies?"
+  "What are policies related to third party contracting?"
+  "What are policies related to risk management?"
+
+define flow answer policies question
+  user ask about policies
+  bot response about policies
+  $accurate = execute check_facts
+  if not $accurate
+    bot remove last message
+    bot inform answer unknown
+
+define bot remove last message
+  "(remove last message)"
